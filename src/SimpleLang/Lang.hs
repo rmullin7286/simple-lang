@@ -8,6 +8,7 @@ module SimpleLang.Lang
        , TypeName(..)
        , RecordMember(..)
        , TopLevelDecl(..)
+       , Primitive(..)
        , identifier
        , name
        , importStmt
@@ -46,7 +47,17 @@ newtype Name = Name [Identifier]
 instance Semigroup Name where
     (Name xs) <> (Name ys) = Name $ xs <> ys
 
-data TypeName = TypeName Name [TypeName]
+data Primitive = PrimitiveInt
+               | PrimitiveLong
+               | PrimitiveDouble
+               | PrimitiveFloat
+               | PrimitiveBool
+               | PrimitiveByte
+               | PrimitiveChar
+    deriving(Show)
+
+data TypeName = RegularName Name [TypeName]
+              | PrimitiveName Primitive
     deriving(Show)
 
 instance TextShow Name where
@@ -96,6 +107,12 @@ reserved = S.fromList [ "if"
                       , "protected"
                       , "type"
                       , "module"
+                      , "Int"
+                      , "Double"
+                      , "Float"
+                      , "Bool"
+                      , "Char"
+                      , "Byte"
                       ]
 
 throwaway parser = parser >> return ()
@@ -178,10 +195,25 @@ importStmt = Import <$> (keyImport *> exists keyStatic)
                            <*> exists (string ".*")
 
 typeName :: Parser TypeName
-typeName = TypeName <$> name <*> many param 
+typeName = try primitiveName <|> regularName
+
+regularName :: Parser TypeName
+regularName = RegularName <$> name <*> many param 
     where param = parentheses <|> plainName
-          plainName = (flip TypeName []) <$> name
+          plainName = (flip RegularName []) <$> name
           parentheses = between lparen rparen typeName
+
+primitiveName :: Parser TypeName
+primitiveName = PrimitiveName <$> primitive
+
+primitive :: Parser Primitive
+primitive = pint <|> plong <|> pfloat <|> pdouble <|> pbyte <|> pchar
+    where pint = symbol "Int" >> return PrimitiveInt
+          plong = symbol "Long" >> return PrimitiveLong
+          pfloat = symbol "Float" >> return PrimitiveFloat
+          pdouble = symbol "Double" >> return PrimitiveDouble
+          pbyte = symbol "Byte" >> return PrimitiveByte
+          pchar = symbol "Char" >> return PrimitiveChar
 
 typeDecl :: Parser TypeDecl
 typeDecl = recordDecl

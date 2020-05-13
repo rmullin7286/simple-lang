@@ -1,0 +1,6 @@
+1. add auto resolution for boxed/unboxed primitives
+2. make indexing system
+3. make type inference system
+4. add function declarations
+5. add value declarations
+6. add special option type
