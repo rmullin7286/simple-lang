@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 15f10a7b4e256ae2b58fb6d4953133656eb8b168f68f2f37951cb0777d7b5438
+-- hash: 8b5c01658d76e154c982ad56877be22de1e43813ae376f14026cce872501da0a
 
 name:           simple-lang
 version:        0.1.0.0
@@ -27,12 +27,14 @@ source-repository head
 
 library
   exposed-modules:
-      SimpleLang.CodeGen
-      SimpleLang.Java
-      SimpleLang.Lang
-      SimpleLang.Parser
-      SimpleLang.Transpile
-      SimpleLang.Util
+      SLC.AST.Java
+      SLC.AST.Shared
+      SLC.AST.SimpleLang
+      SLC.CodeGen
+      SLC.Parsing.Shared
+      SLC.Parsing.SimpleLang
+      SLC.Transpile
+      SLC.Util
   other-modules:
       Paths_simple_lang
   hs-source-dirs:
@@ -76,7 +78,6 @@ test-suite simple-lang-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      SimpleLang.LangSpec
       Paths_simple_lang
   hs-source-dirs:
       test
