@@ -91,8 +91,10 @@ genAccess Package = raw ""
 genAcess Protected = raw "protected"
 
 genTypeName :: TypeName -> JavaGen
-genTypeName (TypeName name []) = genName name
-genTypeName (TypeName name args) = do
+genTypeName (PrimitiveName primitive) = genName name
+    where (RegularName name _) = unboxed primitive
+genTypeName (RegularName name []) = genName name
+genTypeName (RegularName name args) = do
     genName name
     raw "<"
     intercalateGen "," genTypeName args
@@ -134,5 +136,5 @@ genCompilationUnit (CompilationUnit name imports typeDecl) = do
     genPackageDecl name
     emptyLines 1
     forM_ imports genImport
-    emptyLines
+    emptyLines 1
     genTypeDecl typeDecl

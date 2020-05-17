@@ -15,6 +15,8 @@ sc = Lexer.space
 
 keyType = Lexer.symbol sc "type"
 
+symbol' = Lexer.symbol sc
+
 allowNewline :: SpaceConsumer
 allowNewline = skipMany newline
 
@@ -24,8 +26,17 @@ separator = Lexer.lexeme sc $ some (newline <|> char ';')
 line :: Parser a -> Parser a
 line parser = parser <* ((some newline >> return ()) <|> eof)
 
-parseSLTypeName :: Parser TypeName
-parseSLTypeName = TypeName <$> parseName sc <*> many param 
+parseSLPrimitiveName :: Parser TypeName
+parseSLPrimitiveName = primInt <|> primLong <|> primDouble <|> primFloat <|> primChar <|> primByte
+    where primInt = symbol' "Int"
+          primLong = symbol' "Long"
+          primDouble = symbol' "Double"
+          primFloat = symbol' "Float"
+          primChar = symbol' "Char"
+          primByte = symbol' "Byte"
+
+parseSLRegularName :: Parser TypeName
+parseSLRegularName = TypeName <$> parseName sc <*> many param 
     where param = parentheses <|> plainName
           plainName = (flip TypeName []) <$> parseName sc
           parentheses = between (lparen sc) (rparen sc) parseSLTypeName
