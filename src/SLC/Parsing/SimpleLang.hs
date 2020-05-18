@@ -26,19 +26,22 @@ separator = Lexer.lexeme sc $ some (newline <|> char ';')
 line :: Parser a -> Parser a
 line parser = parser <* ((some newline >> return ()) <|> eof)
 
+parseSLTypeName :: Parser TypeName
+parseSLTypeName = try parseSLPrimitiveName <|> parseSLRegularName
+
 parseSLPrimitiveName :: Parser TypeName
-parseSLPrimitiveName = primInt <|> primLong <|> primDouble <|> primFloat <|> primChar <|> primByte
-    where primInt = symbol' "Int"
-          primLong = symbol' "Long"
-          primDouble = symbol' "Double"
-          primFloat = symbol' "Float"
-          primChar = symbol' "Char"
-          primByte = symbol' "Byte"
+parseSLPrimitiveName = PrimitiveName <$> (primInt <|> primLong <|> primDouble <|> primFloat <|> primChar <|> primByte)
+    where primInt = symbol' "Int" >> return PrimitiveInt
+          primLong = symbol' "Long" >> return PrimitiveLong
+          primDouble = symbol' "Double" >> return PrimitiveDouble
+          primFloat = symbol' "Float" >> return PrimitiveFloat
+          primChar = symbol' "Char" >> return PrimitiveChar
+          primByte = symbol' "Byte" >> return PrimitiveByte
 
 parseSLRegularName :: Parser TypeName
-parseSLRegularName = TypeName <$> parseName sc <*> many param 
+parseSLRegularName = RegularName <$> parseName sc <*> many param 
     where param = parentheses <|> plainName
-          plainName = (flip TypeName []) <$> parseName sc
+          plainName = (flip RegularName []) <$> parseName sc
           parentheses = between (lparen sc) (rparen sc) parseSLTypeName
 
 parseTypeDecl :: Parser TypeDecl

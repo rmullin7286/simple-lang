@@ -33,6 +33,9 @@ reserved = S.fromList [ "if"
                       , "Byte"
                       ]
 
+consumeNone :: SpaceConsumer
+consumeNone = return ()
+
 keyStatic :: SpaceConsumer -> Parser T.Text
 keyStatic sc = Lexer.symbol sc "static"
 
@@ -57,6 +60,56 @@ parseImport :: SpaceConsumer -> Parser Import
 parseImport sc = Import <$> (keyImport sc *> exists (keyStatic sc))
                         <*> parseName sc
                         <*> exists (string ".*")
+
+-- TODO: this doesn't support all possible forms of int literals
+intLiteral :: SpaceConsumer -> Parser Literal
+intLiteral sc = Lexer.lexeme sc $ IntLiteral <$> (dec <|> hex <|> bin)
+  where dec = T.cons <$> (oneOf ['+','-']) <*> (T.pack <$> (some digitChar))
+        hex = (<>) <$> (string "0x") <*> (T.pack <$> (some digitChar))
+        bin = (<>) <$> (string "0b") <*> (T.pack <$> (some $ oneOf ['0','1']))
+
+longLiteral :: SpaceConsumer -> Parser Literal
+longLiteral sc = do
+  (IntLiteral t) <- intLiteral consumeNone
+  LongLiteral <$> (T.snoc t <$> char' 'l')
+
+doubleLiteral :: SpaceConsumer -> Parser Literal
+doubleLiteral sc = Lexer.lexeme sc $ do
+  sign <- oneOf ['+','-']
+  beforeDot <- many digitChar
+  dot <- char '.'
+  afterDot <- if beforeDot == "" then (some digitChar) else (many digitChar)
+  return $ DoubleLiteral $ T.pack $ [sign] ++ beforeDot ++ [dot] ++ afterDot
+
+floatLiteral :: SpaceConsumer -> Parser Literal
+floatLiteral sc = Lexer.lexeme sc $ do
+  (DoubleLiteral t) <- doubleLiteral consumeNone
+  suffix <- char' 'f'
+  return $ FloatLiteral $ T.snoc t suffix
+
+boolLiteral :: SpaceConsumer -> Parser Literal
+boolLiteral sc = Lexer.lexeme sc $ BoolLiteral <$> (string "true" <|> string "false")
+
+-- TODO: pretty sure this is broken
+charLiteral :: SpaceConsumer -> Parser Literal
+charLiteral sc = Lexer.lexeme sc $ do
+  char <- between (char '\'') (char '\'') Lexer.charLiteral
+  return $ CharLiteral $ "'" <> (T.singleton char) <> "'"
+
+stringLiteral :: SpaceConsumer -> Parser Literal
+stringLiteral sc = Lexer.lexeme sc $ do
+  str <- between (char '"') (char '"') (many Lexer.charLiteral)
+  return $ StringLiteral $ T.pack str
+
+-- TODO: support all literal formats for integers and such
+parseLiteral :: SpaceConsumer -> Parser Literal
+parseLiteral sc = (try $ floatLiteral sc)
+                  <|> (try $ doubleLiteral sc) 
+                  <|> (try $ longLiteral sc)
+                  <|> (intLiteral sc)
+                  <|> (boolLiteral sc)
+                  <|> (charLiteral sc)
+                  <|> (stringLiteral sc)
 
 colon :: SpaceConsumer -> Parser Char
 colon sc = Lexer.lexeme sc $ char ':'

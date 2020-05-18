@@ -10,7 +10,7 @@ transpileModule (Module name imports types) = map (\t -> CompilationUnit name im
 
 -- box or unbox primitive types as necessary
 processTypeName :: TypeName -> TypeName
-processTypeName (Primitive primitive) = unboxed primitive
+processTypeName (PrimitiveName primitive) = unboxed primitive
 processTypeName (RegularName n args) = (RegularName n $ map processTypeName' args)
     where processTypeName' regular@(RegularName _ _) = regular
           processTypeName' (PrimitiveName primitive) = boxed primitive

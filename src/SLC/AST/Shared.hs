@@ -1,6 +1,7 @@
 module SLC.AST.Shared where
 
 import qualified Data.Text as T
+import Data.Word
 
 newtype Identifier = Identifier {unIdentifier :: T.Text}
 
@@ -47,3 +48,12 @@ data Import = Import
     }
 
 data Access = Public | Private | Package | Protected
+
+-- all of these are stored as plain text because the translation for literals is 1 to 1
+data Literal = IntLiteral T.Text
+             | BoolLiteral T.Text
+             | LongLiteral T.Text
+             | FloatLiteral T.Text
+             | DoubleLiteral T.Text
+             | CharLiteral T.Text
+             | StringLiteral T.Text
