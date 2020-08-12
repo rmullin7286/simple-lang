@@ -1,42 +1,56 @@
+{-
+Module      : SLC.Transpile
+Description : This module contains various routines for the transpilation step of the compiler
+Copyright   : (c) Ryan Mullin, 2020
+License     : GPL-3
+Maintainer  : ryan.mullin12@gmail.com
+Stability   : experimental
+Portability : portable
+-}
 module SLC.Transpile where
 
-import SLC.AST.SimpleLang
 import SLC.AST.Shared
-import SLC.AST.Java
-import SLC.Util
+import qualified SLC.AST.SL as SL
+import qualified SLC.AST.Java as J
+import qualified Data.Text as T
 
-transpileModule :: Module -> [CompilationUnit]
-transpileModule (Module name imports types) = map (\t -> CompilationUnit name imports $ transpileType t) types
+transpileModule :: SL.Module -> [J.File]
+transpileModule (SL.Module name types) = map (transpileToFile name) types
 
--- box or unbox primitive types as necessary
-processTypeName :: TypeName -> TypeName
-processTypeName (PrimitiveName primitive) = unboxed primitive
-processTypeName (RegularName n args) = (RegularName n $ map processTypeName' args)
-    where processTypeName' regular@(RegularName _ _) = regular
-          processTypeName' (PrimitiveName primitive) = boxed primitive
+transpileToFile :: Name -> SL.Record -> J.File
+transpileToFile package typeDecl = J.File package (transpileToClass typeDecl)
 
-transpileType (RecordDecl name members) = ClassTypeDecl $ Class
-    True
-    Public
-    name
-    (recordMemberFields members)
-    (recordMemberConstructors members)
-    (recordMemberMethods members)
+transpileToClass :: SL.Record -> J.Class
+transpileToClass (SL.Record ident members) = J.Class
+    { className = ident
+    , classFields = recordFieldsToJavaFields members
+    , classVisibility = Public
+    , classConstructors = recordFieldsToConstructors members
+    , classMethods = recordFieldsToMethods members
+    }
 
-recordMemberConstructors members = [Constructor Public params statements]
-    where params = map (\(RecordMember i n) -> Param True (processTypeName n) i) members
-          names = map (\(RecordMember i _) -> i) members
-          statements = map (\(Identifier name) -> Statement $ "this." <> name <> " = " <> name) names
 
-recordMemberFields = map $ \(RecordMember ident typen) -> Field Private False True ident (processTypeName typen)
+recordFieldsToJavaFields :: [SL.Field] -> [J.Field]
+recordFieldsToJavaFields = map $ \(SL.Field name typen) -> J.Field 
+    { fieldName = name
+    , fieldType = typen
+    , fieldVisibility = Private
+    , fieldFinal = True
+    }
 
-recordMemberMethods = map $ \(RecordMember name@(Identifier ident) typen) -> Method 
-    Public 
-    False 
-    True 
-    (processTypeName typen)
-    (getterName name)
-    []
-    [Statement $ "return this." <> ident]
+recordFieldsToConstructors :: [SL.Field] -> [J.Constructor]
+recordFieldsToConstructors fields = [J.Constructor Public params statements]
+    where params = map (\(SL.Field name typen) -> J.Param name typen) fields
+          statements = map (\(SL.Field name _) -> J.Assignment (J.FieldAccess J.This name) (J.ExprIdentifier name)) fields
 
-getterName (Identifier t) = Identifier $ "get" <> capitalizeFirst t
+recordFieldsToMethods :: [SL.Field] -> [J.Method]
+recordFieldsToMethods = map getter
+
+getter :: SL.Field -> J.Method
+getter (SL.Field iname@(Identifier name) typen) = J.Method 
+    { methodName = Identifier $ "get" <> T.toTitle name
+    , methodVisibility = Public
+    , methodParams = []
+    , methodReturn = typen
+    , methodBody = [J.Return $ J.FieldAccess J.This iname]
+    }

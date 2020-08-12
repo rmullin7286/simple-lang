@@ -1,8 +1,5 @@
-import foo1
-import foo1.foo2
-
-type Point = { x : Int
-               y : Int
+type Point = { x : Foo
+               y : Foo
              }
 
-type PointF = { x : Float; y : Float }
+type PointF = { x : Foo; y : Foo }

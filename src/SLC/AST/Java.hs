@@ -1,49 +1,59 @@
+{-
+Module      : SLC.AST.Java
+Description : AST definitions for Java code
+Copyright   : (c) Ryan Mullin, 2020
+License     : GPL-3
+Maintainer  : ryan.mullin12@gmail.com
+Stability   : experimental
+Portability : portable
+
+Since there may be collisions with AST datatypes in SL, this package should usually be imported
+as qualified if it's being used alongside SL AST.
+-}
 module SLC.AST.Java where
 
 import SLC.AST.Shared
-import qualified Data.Text as T
 
-data CompilationUnit = CompilationUnit Name [Import] TypeDecl
-
-data TypeDecl = ClassTypeDecl Class
+data File = File
+    { filePackage :: Name
+    , fileClass :: Class
+    }
 
 data Class = Class
-    { classFinal :: Bool
-    , classAccess :: Access
-    , className :: Identifier
+    { className :: Identifier
     , classFields :: [Field]
+    , classVisibility :: Visibility
     , classConstructors :: [Constructor]
     , classMethods :: [Method]
     }
 
 data Field = Field
-    { fieldAccess :: Access
-    , fieldStatic :: Bool
+    { fieldName :: Identifier
+    , fieldType :: Name
+    , fieldVisibility :: Visibility
     , fieldFinal :: Bool
-    , fieldName :: Identifier
-    , fieldType :: TypeName
     }
 
 data Constructor = Constructor
-    { constructorAccess :: Access
+    { constructorVisibility :: Visibility
     , constructorParams :: [Param]
     , constructorBody :: [Statement]
     }
 
 data Method = Method
-    { methodAccess :: Access
-    , methodStatic :: Bool
-    , methodFinal :: Bool
-    , methodReturnType :: TypeName
-    , methodName :: Identifier
+    { methodName :: Identifier
+    , methodVisibility :: Visibility
     , methodParams :: [Param]
+    , methodReturn :: Name
     , methodBody :: [Statement]
     }
 
-newtype Statement = Statement T.Text
-
-data Param = Param
-    { paramFinal :: Bool
-    , paramType :: TypeName
-    , paramName :: Identifier
+data Param = Param 
+    { paramName :: Identifier
+    , paramType :: Name
     }
+
+data Statement = Assignment Expr Expr | Return Expr
+
+data Expr = This | FieldAccess Expr Identifier | ExprIdentifier Identifier
+
