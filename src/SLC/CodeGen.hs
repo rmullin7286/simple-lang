@@ -61,12 +61,21 @@ genIdentifier (Identifier t) = raw t
 genName :: Name -> JavaGen
 genName (Name idents) = intercalateGen "." (\(Identifier i) -> raw i) idents
 
+genTypeName :: TypeName -> JavaGen
+genTypeName (PrimitiveName primitive) = genName name
+    where (RegularName name _) = unboxed primitive
+genTypeName (RegularName name []) = genName name
+genTypeName (RegularName name args) = do
+    genName name
+    raw "<"
+    intercalateGen "," genTypeName args
+
 genField :: Field -> JavaGen
 genField Field{..} = line $ do
     genVisibility fieldVisibility
     raw " "
     when fieldFinal $ raw "final "
-    genName fieldType
+    genTypeName fieldType
     raw " "
     genIdentifier fieldName
 
@@ -75,7 +84,7 @@ genParameters [] = raw "()"
 genParameters params = do
     raw "( "
     let genParam (Param name typen) = do
-                genName typen
+                genTypeName typen
                 raw " "
                 genIdentifier name
     intercalateGen ", " genParam params
@@ -94,6 +103,8 @@ genMethod :: Method -> JavaGen
 genMethod Method{..} = do
     let header = do
             genVisibility methodVisibility
+            raw " "
+            genTypeName methodReturn
             raw " "
             genIdentifier methodName
             genParameters methodParams

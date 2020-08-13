@@ -1,5 +1,5 @@
-type Point = { x : Foo
-               y : Foo
+type Point = { x : Int
+               y : Int
              }
 
-type PointF = { x : Foo; y : Foo }
+type PointF = { x : Float; y : Float }

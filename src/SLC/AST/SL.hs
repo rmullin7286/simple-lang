@@ -43,7 +43,7 @@ data Record = Record
 -- |Records contain one or more fields that will be translated to fields in the final Java class
 data Field = Field 
     { fieldName :: Identifier
-    , fieldType :: Name
+    , fieldType :: TypeName
     }
 
 sc :: SpaceConsumer
@@ -51,6 +51,8 @@ sc = Lexer.space
     (skipSome (char ' ' <|> tab))
     (Lexer.skipLineComment "//")
     (Lexer.skipBlockComment "/*" "*/")
+
+symbol' = Lexer.symbol sc
 
 allowNewline :: SpaceConsumer
 allowNewline = skipMany newline
@@ -68,7 +70,25 @@ parseRecord :: Parser Record
 parseRecord = Record <$> (keyType *> parseIdentifier sc)
                      <*> ((opEquals sc) *> (between (lbracket sc) (rbracket sc) $ allowNewline *> field `sepEndBy` separator))
     where field = Field <$> parseIdentifier sc <* colon sc
-                        <*> parseName sc
+                        <*> parseTypeName
+
+parseTypeName :: Parser TypeName
+parseTypeName = try parsePrimitiveName <|> parseRegularName
+
+parsePrimitiveName :: Parser TypeName
+parsePrimitiveName = PrimitiveName <$> (primInt <|> primLong <|> primDouble <|> primFloat <|> primChar <|> primByte)
+    where primInt = symbol' "Int" >> return PrimitiveInt
+          primLong = symbol' "Long" >> return PrimitiveLong
+          primDouble = symbol' "Double" >> return PrimitiveDouble
+          primFloat = symbol' "Float" >> return PrimitiveFloat
+          primChar = symbol' "Char" >> return PrimitiveChar
+          primByte = symbol' "Byte" >> return PrimitiveByte
+
+parseRegularName :: Parser TypeName
+parseRegularName = RegularName <$> parseName sc <*> many param 
+    where param = parentheses <|> plainName
+          plainName = (flip RegularName []) <$> parseName sc
+          parentheses = between (lparen sc) (rparen sc) parseTypeName
 
 -- |Each file in a program corresponds to one Module
 parseFile :: Name -> Parser Module

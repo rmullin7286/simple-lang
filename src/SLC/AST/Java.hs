@@ -29,7 +29,7 @@ data Class = Class
 
 data Field = Field
     { fieldName :: Identifier
-    , fieldType :: Name
+    , fieldType :: TypeName
     , fieldVisibility :: Visibility
     , fieldFinal :: Bool
     }
@@ -44,13 +44,13 @@ data Method = Method
     { methodName :: Identifier
     , methodVisibility :: Visibility
     , methodParams :: [Param]
-    , methodReturn :: Name
+    , methodReturn :: TypeName
     , methodBody :: [Statement]
     }
 
 data Param = Param 
     { paramName :: Identifier
-    , paramType :: Name
+    , paramType :: TypeName
     }
 
 data Statement = Assignment Expr Expr | Return Expr
