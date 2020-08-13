@@ -30,6 +30,7 @@ import qualified Data.Text as T
 -- to a static Java class depending on the contents
 data Module = Module 
     { moduleName :: Name
+    , moduleImports :: [Import]
     , moduleTypes :: [Record]
     }
 
@@ -93,5 +94,6 @@ parseRegularName = RegularName <$> parseName sc <*> many param
 -- |Each file in a program corresponds to one Module
 parseFile :: Name -> Parser Module
 parseFile name = do
+    imports <- many $ line $ parseImport sc
     types <- some $ line $ parseRecord
-    return $ Module name types
+    return $ Module name imports types

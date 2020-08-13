@@ -16,6 +16,7 @@ import SLC.AST.Shared
 
 data File = File
     { filePackage :: Name
+    , fileImports :: [Import]
     , fileClass :: Class
     }
 

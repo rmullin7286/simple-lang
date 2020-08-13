@@ -15,10 +15,10 @@ import qualified SLC.AST.Java as J
 import qualified Data.Text as T
 
 transpileModule :: SL.Module -> [J.File]
-transpileModule (SL.Module name types) = map (transpileToFile name) types
+transpileModule (SL.Module name imports types) = map (transpileToFile name imports) types
 
-transpileToFile :: Name -> SL.Record -> J.File
-transpileToFile package typeDecl = J.File package (transpileToClass typeDecl)
+transpileToFile :: Name -> [Import] -> SL.Record -> J.File
+transpileToFile package imports typeDecl = J.File package imports (transpileToClass typeDecl)
 
 transpileToClass :: SL.Record -> J.Class
 transpileToClass (SL.Record ident members) = J.Class

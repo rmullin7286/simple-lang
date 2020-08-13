@@ -61,6 +61,13 @@ genIdentifier (Identifier t) = raw t
 genName :: Name -> JavaGen
 genName (Name idents) = intercalateGen "." (\(Identifier i) -> raw i) idents
 
+genImport :: Import -> JavaGen
+genImport (Import static name wildcard) = line $ do
+    raw "import "
+    when static $ raw "static "
+    genName name
+    when wildcard $ raw ".*"
+
 genTypeName :: TypeName -> JavaGen
 genTypeName (PrimitiveName primitive) = genName name
     where (RegularName name _) = unboxed primitive
@@ -142,6 +149,8 @@ genClass Class{..} = do
 genFile :: File -> JavaGen
 genFile File{..} = do
     genPackageDecl filePackage
+    emptyLines 1
+    mapM_ genImport fileImports
     emptyLines 1
     genClass fileClass
     

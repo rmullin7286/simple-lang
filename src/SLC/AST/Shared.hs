@@ -17,6 +17,8 @@ module SLC.AST.Shared(
     Visibility(..),
     TypeName(..),
     Primitive(..),
+    Import(..),
+    parseImport,
     unboxed,
     boxed,
     parseName,
@@ -98,6 +100,12 @@ data Primitive = PrimitiveInt
                | PrimitiveByte
                | PrimitiveChar
 
+data Import = Import
+    { importStatic :: Bool
+    , importName :: Name
+    , importWildCard :: Bool
+    }
+
 simpleRegName t = RegularName (Name [Identifier t]) []
 
 unboxed :: Primitive -> TypeName
@@ -118,8 +126,22 @@ boxed PrimitiveDouble = simpleRegName "Double"
 boxed PrimitiveByte = simpleRegName "Byte"
 boxed PrimitiveChar = simpleRegName "Char"
 
+keyStatic :: SpaceConsumer -> Parser T.Text
+keyStatic sc = Lexer.symbol sc "static"
+
+keyImport :: SpaceConsumer -> Parser T.Text
+keyImport sc = Lexer.symbol sc "import"
+
+exists :: Parser T.Text -> Parser Bool
+exists parser = (try parser >> return True) <|> pure False
+
 parseName :: SpaceConsumer -> Parser Name
 parseName sc = Name <$> (parseIdentifier sc) `sepBy1` char '.'
+
+parseImport :: SpaceConsumer -> Parser Import
+parseImport sc = Import <$> (keyImport sc *> exists (keyStatic sc))
+                        <*> parseName sc
+                        <*> exists (string ".*")
 
 colon :: SpaceConsumer -> Parser Char
 colon sc = Lexer.lexeme sc $ char ':'

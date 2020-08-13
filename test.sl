@@ -1,3 +1,5 @@
+import foo.bar.baz
+
 type Point = { x : Int
                y : Int
              }
