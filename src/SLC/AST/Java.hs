@@ -56,5 +56,8 @@ data Param = Param
 
 data Statement = Assignment Expr Expr | Return Expr
 
-data Expr = This | FieldAccess Expr Identifier | ExprIdentifier Identifier
+data Expr = This 
+          | FieldAccess Expr Identifier 
+          | ExprIdentifier Identifier
+          | LiteralExpr Literal
 

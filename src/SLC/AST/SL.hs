@@ -47,6 +47,11 @@ data Field = Field
     , fieldType :: TypeName
     }
 
+data Expr = LiteralExpr Literal
+
+parseExpr :: SpaceConsumer -> Parser Expr
+parseExpr sc = LiteralExpr <$> parseLiteral
+
 sc :: SpaceConsumer
 sc = Lexer.space
     (skipSome (char ' ' <|> tab))

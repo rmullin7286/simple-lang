@@ -18,6 +18,8 @@ module SLC.AST.Shared(
     TypeName(..),
     Primitive(..),
     Import(..),
+    Literal(..),
+    parseLiteral,
     parseImport,
     unboxed,
     boxed,
@@ -125,6 +127,64 @@ boxed PrimitiveFloat = simpleRegName "Float"
 boxed PrimitiveDouble = simpleRegName "Double"
 boxed PrimitiveByte = simpleRegName "Byte"
 boxed PrimitiveChar = simpleRegName "Char"
+
+-- all of these are stored as plain text because the translation for literals is 1 to 1
+data Literal = IntLiteral T.Text
+             | BoolLiteral T.Text
+             | LongLiteral T.Text
+             | FloatLiteral T.Text
+             | DoubleLiteral T.Text
+             | CharLiteral T.Text
+             | StringLiteral T.Text
+
+intLiteral :: SpaceConsumer -> Parser Literal
+intLiteral sc = Lexer.lexeme sc $ IntLiteral <$> (dec <|> hex <|> bin)
+  where dec = T.cons <$> (oneOf ['+','-']) <*> (T.pack <$> (some digitChar))
+        hex = (<>) <$> (string "0x") <*> (T.pack <$> (some digitChar))
+        bin = (<>) <$> (string "0b") <*> (T.pack <$> (some $ oneOf ['0','1']))
+
+longLiteral :: SpaceConsumer -> Parser Literal
+longLiteral sc = do
+  (IntLiteral t) <- intLiteral consumeNone
+  LongLiteral <$> (T.snoc t <$> char' 'l')
+
+doubleLiteral :: SpaceConsumer -> Parser Literal
+doubleLiteral sc = Lexer.lexeme sc $ do
+  sign <- oneOf ['+','-']
+  beforeDot <- many digitChar
+  dot <- char '.'
+  afterDot <- if beforeDot == "" then (some digitChar) else (many digitChar)
+  return $ DoubleLiteral $ T.pack $ [sign] ++ beforeDot ++ [dot] ++ afterDot
+
+floatLiteral :: SpaceConsumer -> Parser Literal
+floatLiteral sc = Lexer.lexeme sc $ do
+  (DoubleLiteral t) <- doubleLiteral consumeNone
+  suffix <- char' 'f'
+  return $ FloatLiteral $ T.snoc t suffix
+
+boolLiteral :: SpaceConsumer -> Parser Literal
+boolLiteral sc = Lexer.lexeme sc $ BoolLiteral <$> (string "true" <|> string "false")
+
+-- TODO: pretty sure this is broken
+charLiteral :: SpaceConsumer -> Parser Literal
+charLiteral sc = Lexer.lexeme sc $ do
+  char <- between (char '\'') (char '\'') Lexer.charLiteral
+  return $ CharLiteral $ "'" <> (T.singleton char) <> "'"
+
+stringLiteral :: SpaceConsumer -> Parser Literal
+stringLiteral sc = Lexer.lexeme sc $ do
+  str <- between (char '"') (char '"') (many Lexer.charLiteral)
+  return $ StringLiteral $ T.pack str
+
+-- TODO: support all literal formats for integers and such
+parseLiteral :: SpaceConsumer -> Parser Literal
+parseLiteral sc = (try $ floatLiteral sc)
+                  <|> (try $ doubleLiteral sc) 
+                  <|> (try $ longLiteral sc)
+                  <|> (intLiteral sc)
+                  <|> (boolLiteral sc)
+                  <|> (charLiteral sc)
+                  <|> (stringLiteral sc)
 
 keyStatic :: SpaceConsumer -> Parser T.Text
 keyStatic sc = Lexer.symbol sc "static"
