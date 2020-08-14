@@ -133,12 +133,20 @@ genExpr This = raw "this"
 genExpr (FieldAccess lhs ident) = genExpr lhs >> raw "." >> genIdentifier ident
 genExpr (ExprIdentifier ident) = genIdentifier ident
 
+genGenerics :: [Identifier] -> JavaGen
+genGenerics [] = return ()
+genGenerics generics = do
+    raw "<"
+    intercalateGen ", " genIdentifier generics
+    raw ">"
+
 genClass :: Class -> JavaGen
 genClass Class{..} = do
     let header = do
             genVisibility classVisibility
             raw " class "
             genIdentifier className
+            genGenerics classGenerics
     withBody header $ do
         forM_ classFields genField
         emptyLines 1

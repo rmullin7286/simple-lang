@@ -38,6 +38,7 @@ data Module = Module
 -- The declaration syntax is identical to that of F#'s records
 data Record = Record
     { recordName :: Identifier
+    , recordGenerics :: [Identifier]
     , recordMembers :: [Field]
     }
 
@@ -50,7 +51,7 @@ data Field = Field
 data Expr = LiteralExpr Literal
 
 parseExpr :: SpaceConsumer -> Parser Expr
-parseExpr sc = LiteralExpr <$> parseLiteral
+parseExpr sc = LiteralExpr <$> parseLiteral sc
 
 sc :: SpaceConsumer
 sc = Lexer.space
@@ -74,6 +75,7 @@ separator = Lexer.lexeme sc $ some (newline <|> char ';')
 
 parseRecord :: Parser Record
 parseRecord = Record <$> (keyType *> parseIdentifier sc)
+                     <*> (many $ parseIdentifier sc)
                      <*> ((opEquals sc) *> (between (lbracket sc) (rbracket sc) $ allowNewline *> field `sepEndBy` separator))
     where field = Field <$> parseIdentifier sc <* colon sc
                         <*> parseTypeName

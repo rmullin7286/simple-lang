@@ -21,12 +21,13 @@ transpileToFile :: Name -> [Import] -> SL.Record -> J.File
 transpileToFile package imports typeDecl = J.File package imports (transpileToClass typeDecl)
 
 transpileToClass :: SL.Record -> J.Class
-transpileToClass (SL.Record ident members) = J.Class
+transpileToClass (SL.Record ident generics members) = J.Class
     { className = ident
     , classFields = recordFieldsToJavaFields members
     , classVisibility = Public
     , classConstructors = recordFieldsToConstructors members
     , classMethods = recordFieldsToMethods members
+    , classGenerics = generics
     }
 
 

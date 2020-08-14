@@ -45,6 +45,9 @@ type Parser = Parsec Void T.Text
 -- |A SpaceConsumer consumes space text and returns nothing. Useful for defining lexemes
 type SpaceConsumer = Parsec Void T.Text ()
 
+consumeNone :: SpaceConsumer
+consumeNone = return ()
+
 reservedWords :: S.Set T.Text
 reservedWords = S.fromList [ "if" 
                       , "then"

@@ -26,6 +26,7 @@ data Class = Class
     , classVisibility :: Visibility
     , classConstructors :: [Constructor]
     , classMethods :: [Method]
+    , classGenerics :: [Identifier]
     }
 
 data Field = Field
