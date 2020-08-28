@@ -4,8 +4,7 @@ type Point = { x : Int
                y : Int
              }
 
-type PointF = { x : Float; y : Float }
+type Pair t u = { x : t;
+                  y : u }
 
-type PointGeneric T = { x : T; y : T }
-
-type Pair T U = {first : T; second : U}
+let foo (p : Point) : String = "foo"

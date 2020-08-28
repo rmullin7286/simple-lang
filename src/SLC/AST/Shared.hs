@@ -14,11 +14,16 @@ module SLC.AST.Shared(
     Identifier(..),
     parseIdentifier,
     Name(..),
+    mkName,
+    unqualified,
+    isQualified,
     Visibility(..),
     TypeName(..),
+    unqualifiedTypename,
     Primitive(..),
     Import(..),
     Literal(..),
+    literalText,
     parseLiteral,
     parseImport,
     unboxed,
@@ -50,23 +55,23 @@ consumeNone = return ()
 
 reservedWords :: S.Set T.Text
 reservedWords = S.fromList [ "if" 
-                      , "then"
-                      , "else"
-                      , "static"
-                      , "import"
-                      , "public"
-                      , "private"
-                      , "package"
-                      , "protected"
-                      , "type"
-                      , "module"
-                      , "Int"
-                      , "Double"
-                      , "Float"
-                      , "Bool"
-                      , "Char"
-                      , "Byte"
-                      ]
+                            , "then"
+                            , "else"
+                            , "static"
+                            , "import"
+                            , "public"
+                            , "private"
+                            , "package"
+                            , "protected"
+                            , "type"
+                            , "module"
+                            , "Int"
+                            , "Double"
+                            , "Float"
+                            , "Bool"
+                            , "Char"
+                            , "Byte"
+                            ]
 
 -- |Checks if a given text value is a reserved word.
 -- reserved words are shared between both Java and SL even if the word isn't
@@ -78,6 +83,7 @@ reserved = flip S.member reservedWords
 -- letters, underscores and digits.
 -- An identifier must not be a reserved word
 newtype Identifier = Identifier T.Text
+  deriving(Eq, Ord, Show)
 
 parseIdentifier :: SpaceConsumer -> Parser Identifier
 parseIdentifier sc = (Lexer.lexeme sc . try) (p >>= check)
@@ -90,12 +96,29 @@ parseIdentifier sc = (Lexer.lexeme sc . try) (p >>= check)
 -- |A name is a sequence of one or more identifiers separated by periods,
 -- such as foo.bar.Baz
 newtype Name = Name [Identifier]
+  deriving(Show)
+
+mkName :: [T.Text] -> Name
+mkName = Name . map Identifier
+
+isQualified :: Name -> Bool
+isQualified (Name []) = False
+isQualified (Name [i]) = False
+isQualified _ = True
+
+unqualified :: Name -> Identifier
+unqualified (Name is) = last is
 
 -- |Visibility is the same in Java and SL, although SL tends to default to public visibility
 data Visibility = Public | Protected | Package | Private
 
 data TypeName = RegularName Name [TypeName]
               | PrimitiveName Primitive
+              deriving(Show)
+
+unqualifiedTypename :: TypeName -> Identifier
+unqualifiedTypename (RegularName name _) = unqualified name
+unqualifiedTypename (PrimitiveName primitive) = unqualifiedTypename $ boxed primitive
 
 data Primitive = PrimitiveInt 
                | PrimitiveBool
@@ -104,6 +127,7 @@ data Primitive = PrimitiveInt
                | PrimitiveDouble
                | PrimitiveByte
                | PrimitiveChar
+               deriving(Show)
 
 data Import = Import
     { importStatic :: Bool
@@ -139,6 +163,16 @@ data Literal = IntLiteral T.Text
              | DoubleLiteral T.Text
              | CharLiteral T.Text
              | StringLiteral T.Text
+             deriving(Show)
+
+literalText :: Literal -> T.Text
+literalText (IntLiteral t) = t
+literalText (BoolLiteral t) = t
+literalText (LongLiteral t) = t
+literalText (FloatLiteral t) = t
+literalText (DoubleLiteral t) = t
+literalText (CharLiteral t) = t
+literalText (StringLiteral t) = t
 
 intLiteral :: SpaceConsumer -> Parser Literal
 intLiteral sc = Lexer.lexeme sc $ IntLiteral <$> (dec <|> hex <|> bin)
@@ -176,8 +210,8 @@ charLiteral sc = Lexer.lexeme sc $ do
 
 stringLiteral :: SpaceConsumer -> Parser Literal
 stringLiteral sc = Lexer.lexeme sc $ do
-  str <- between (char '"') (char '"') (many Lexer.charLiteral)
-  return $ StringLiteral $ T.pack str
+  str <- char '"' >> manyTill Lexer.charLiteral (char '"')
+  return $ StringLiteral $ T.pack ("\"" ++ str ++ "\"")
 
 -- TODO: support all literal formats for integers and such
 parseLiteral :: SpaceConsumer -> Parser Literal

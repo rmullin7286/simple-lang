@@ -14,8 +14,12 @@ module SLC.AST.SL(
     Record(..),
     Field(..),
     Module(..),
+    Function(..),
+    Param(..),
+    Expr(..),
     parseRecord,
-    parseFile
+    parseFile,
+    parseFunction
 ) where
 
 import SLC.AST.Shared
@@ -24,6 +28,7 @@ import qualified Text.Megaparsec.Char.Lexer as Lexer
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Data.Text as T
+import Data.List
 
 -- |A Module is the top level structure of an SL program
 -- Modules are either directly translated to a number of Java files or
@@ -32,7 +37,10 @@ data Module = Module
     { moduleName :: Name
     , moduleImports :: [Import]
     , moduleTypes :: [Record]
+    , moduleFunctions :: [Function]
     }
+
+data TopLevel = TypeDecl Record | FunctionDecl Function
 
 -- |A record is a data class that translates 1 to 1 with a Java POJO
 -- The declaration syntax is identical to that of F#'s records
@@ -48,7 +56,20 @@ data Field = Field
     , fieldType :: TypeName
     }
 
+data Function = Function
+    { functionName :: Identifier
+    , functionParams :: [Param]
+    , functionReturn :: TypeName
+    , functionBody :: Expr
+    } deriving(Show)
+
+data Param = Param 
+    { paramName :: Identifier
+    , paramType ::  TypeName
+    } deriving(Show)
+
 data Expr = LiteralExpr Literal
+    deriving(Show)
 
 parseExpr :: SpaceConsumer -> Parser Expr
 parseExpr sc = LiteralExpr <$> parseLiteral sc
@@ -70,8 +91,21 @@ line parser = parser <* ((some newline >> return ()) <|> eof)
 keyType :: Parser T.Text
 keyType = Lexer.symbol sc "type"
 
+keyLet :: Parser T.Text
+keyLet = Lexer.symbol sc "let"
+
 separator :: Parser [Char]
 separator = Lexer.lexeme sc $ some (newline <|> char ';')
+
+parseFunction = Function <$> (keyLet *> parseIdentifier sc)
+                         <*> some parseParam
+                         <*> (colon sc *> parseTypeName)
+                         <*> (opEquals sc *> parseExpr sc)
+
+parseParam :: Parser Param
+parseParam =  between (lparen sc) (rparen sc) $ Param <$> parseIdentifier sc 
+                                                      <*> (colon sc *> parseTypeName)
+                         
 
 parseRecord :: Parser Record
 parseRecord = Record <$> (keyType *> parseIdentifier sc)
@@ -98,9 +132,17 @@ parseRegularName = RegularName <$> parseName sc <*> many param
           plainName = (flip RegularName []) <$> parseName sc
           parentheses = between (lparen sc) (rparen sc) parseTypeName
 
+parseTopLevel :: Parser TopLevel
+parseTopLevel = (TypeDecl <$> parseRecord) <|> (FunctionDecl <$> parseFunction)
+
+partitionTopLevels :: [TopLevel] -> ([Record], [Function])
+partitionTopLevels = partitionMap $ \case (TypeDecl t) -> Left t
+                                          (FunctionDecl f) -> Right f
+
 -- |Each file in a program corresponds to one Module
 parseFile :: Name -> Parser Module
 parseFile name = do
     imports <- many $ line $ parseImport sc
-    types <- some $ line $ parseRecord
-    return $ Module name imports types
+    topLevels <- some $ line $ parseTopLevel
+    let (types, functions) = partitionTopLevels topLevels
+    return $ Module name imports types functions

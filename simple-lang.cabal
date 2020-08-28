@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 983010ae63ae73756f39a56f78829a1b710c114ebe4b8b1d528962b14ac3926d
+-- hash: 3c46235748541e756c3a270e0910187d4677f140e2df983226ec1db70db285aa
 
 name:           simple-lang
 version:        0.1.0.0
@@ -37,7 +37,7 @@ library
       Paths_simple_lang
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings DerivingVia DeriveGeneric TypeApplications RecordWildCards
+  default-extensions: OverloadedStrings DerivingVia DeriveGeneric TypeApplications RecordWildCards LambdaCase
   build-depends:
       argparser >=0.3.4
     , base >=4.9 && <5
@@ -57,7 +57,8 @@ executable slc
       Paths_simple_lang
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -XOverloadedStrings
+  default-extensions: OverloadedStrings DerivingVia DeriveGeneric TypeApplications RecordWildCards LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       argparser >=0.3.4
     , base >=4.9 && <5

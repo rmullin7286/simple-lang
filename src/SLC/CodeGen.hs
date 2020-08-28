@@ -90,7 +90,8 @@ genParameters :: [Param] -> JavaGen
 genParameters [] = raw "()"
 genParameters params = do
     raw "( "
-    let genParam (Param name typen) = do
+    let genParam (Param name typen isFinal) = do
+                when isFinal $ raw "final "
                 genTypeName typen
                 raw " "
                 genIdentifier name
@@ -132,6 +133,7 @@ genExpr :: Expr -> JavaGen
 genExpr This = raw "this"
 genExpr (FieldAccess lhs ident) = genExpr lhs >> raw "." >> genIdentifier ident
 genExpr (ExprIdentifier ident) = genIdentifier ident
+genExpr (LiteralExpr l ) = raw $ literalText l
 
 genGenerics :: [Identifier] -> JavaGen
 genGenerics [] = return ()

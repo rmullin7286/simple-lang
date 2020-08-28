@@ -22,11 +22,11 @@ data File = File
 
 data Class = Class
     { className :: Identifier
+    , classGenerics :: [Identifier]
     , classFields :: [Field]
     , classVisibility :: Visibility
     , classConstructors :: [Constructor]
     , classMethods :: [Method]
-    , classGenerics :: [Identifier]
     }
 
 data Field = Field
@@ -53,6 +53,7 @@ data Method = Method
 data Param = Param 
     { paramName :: Identifier
     , paramType :: TypeName
+    , paramIsFinal :: Bool
     }
 
 data Statement = Assignment Expr Expr | Return Expr
@@ -62,3 +63,5 @@ data Expr = This
           | ExprIdentifier Identifier
           | LiteralExpr Literal
 
+addMethod :: Class -> Method -> Class
+addMethod c@Class{..} m = c { classMethods = (classMethods ++ [m])}
