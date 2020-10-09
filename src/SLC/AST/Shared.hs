@@ -34,7 +34,8 @@ module SLC.AST.Shared(
     rbracket,
     lparen,
     rparen,
-    opEquals
+    opEquals,
+    consumeNone
 ) where
 
 import qualified Text.Megaparsec.Char.Lexer as Lexer
@@ -96,7 +97,7 @@ parseIdentifier sc = (Lexer.lexeme sc . try) (p >>= check)
 -- |A name is a sequence of one or more identifiers separated by periods,
 -- such as foo.bar.Baz
 newtype Name = Name [Identifier]
-  deriving(Show)
+  deriving(Show, Eq)
 
 mkName :: [T.Text] -> Name
 mkName = Name . map Identifier
